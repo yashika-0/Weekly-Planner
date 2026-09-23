@@ -1,4 +1,4 @@
-import { DAYS, dateForDay } from './dates';
+import { DAYS } from './dates';
 
 function miniTaskMinutes(task) {
   if (!task.miniTasks || task.miniTasks.length === 0) {
@@ -123,12 +123,8 @@ export function generateSchedule(week, tasks) {
   function deadlineIndex(task) {
     if (!task.deadline) return DAYS.length - 1;
 
-    const deadline = new Date(`${task.deadline}T00:00:00`);
-    const deadlineDate = dateForDay(weekStart, 'mon');
-
-    if (!deadlineDate) return DAYS.length - 1;
-
-    const start = new Date(`${weekStart}T00:00:00`);
+        const deadline = new Date(`${task.deadline}T00:00:00`);
+        const start = new Date(`${weekStart}T00:00:00`);
     const diff =
       Math.floor(
         (deadline.getTime() - start.getTime()) /

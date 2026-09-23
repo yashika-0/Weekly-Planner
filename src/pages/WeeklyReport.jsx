@@ -21,7 +21,26 @@ export default function WeeklyReport() {
         : null,
     [activeWeek, buildWeeklyReportData]
   );
+if (closed) {
+    return (
+      <section className="weekly-report-page">
+        <div className="page-header">
+          <div>
+            <h1>Weekly Report</h1>
+            <p>Review your completed week.</p>
+          </div>
+        </div>
 
+        <div className="card">
+          <h3>Week closed</h3>
+          <p>
+            The report has been saved. Selected incomplete tasks were
+            carried forward.
+          </p>
+        </div>
+      </section>
+    );
+  }
   if (!activeWeek) {
     const latestReport = weeks.find(
       (week) => week.status === 'closed'
@@ -99,17 +118,7 @@ export default function WeeklyReport() {
         </div>
       </div>
 
-      {closed ? (
-        <div className="card">
-          <h3>Week closed</h3>
-          <p>
-            The report has been saved. Selected incomplete tasks were
-            carried forward.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="grid-3">
+            <div className="grid-3">
             <div className="card stat">
               <span>Completion</span>
               <strong>
@@ -210,10 +219,8 @@ export default function WeeklyReport() {
               onClick={handleCloseWeek}
             >
               Close Week
-            </button>
+              </button>
           </div>
-        </>
-      )}
     </section>
   );
 }

@@ -237,9 +237,11 @@ function TaskForm({ onClose }) {
 function TaskRow({ task }) {
   const {
     activeWeek,
+    weeks,
     addTask,
     updateTask,
     deleteTask,
+    toggleTaskDone,
   } = useApp();
 
   const [editing, setEditing] = useState(false);
@@ -255,6 +257,54 @@ function TaskRow({ task }) {
       weekId: activeWeek.id,
       status: 'active',
     });
+  }
+
+  /*
+   * If this task is scheduled into a specific day of its week,
+   * route completion through toggleTaskDone() so the day's
+   * dailyRecord (and therefore streaks / Today / Weekly Report)
+   * stays in sync with the task's own status. Only tasks with
+   * no scheduled day (not yet planned into a week) fall back to
+   * flipping task.status directly, since there's no daily record
+   * to reconcile.
+   */
+  function findScheduledDay() {
+    const week = weeks.find((w) => w.id === task.weekId);
+    if (!week?.schedule) return null;
+
+    const day = Object.keys(week.schedule.days).find((d) =>
+      (week.schedule.days[d] || []).some(
+        (entry) => entry.taskId === task.id
+      )
+    );
+
+    return day ? { week, day } : null;
+  }
+
+  async function handleMarkDone() {
+    /*
+     * Tasks with mini-tasks are completed through their
+     * mini-tasks on the Today page.
+     */
+    if (hasMiniTasks) return;
+
+    const scheduled = findScheduledDay();
+
+    if (scheduled) {
+      await toggleTaskDone(scheduled.week.id, scheduled.day, task.id);
+    } else {
+      await updateTask(task.id, { status: 'done' });
+    }
+  }
+
+  async function handleReopen() {
+    const scheduled = findScheduledDay();
+
+    if (scheduled) {
+      await toggleTaskDone(scheduled.week.id, scheduled.day, task.id);
+    } else {
+      await updateTask(task.id, { status: 'active' });
+    }
   }
 
   async function handleMarkDone() {

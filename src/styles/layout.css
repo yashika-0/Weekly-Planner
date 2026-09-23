@@ -1003,20 +1003,6 @@
   color: var(--history-text-muted);
 }
 
-/* Light accent for statistics */
-.history-page .grid-3 .stat:nth-child(1) {
-  border-top: 3px solid var(--history-yellow);
-}
-
-.history-page .grid-3 .stat:nth-child(2) {
-  border-top: 3px solid var(--history-peach);
-}
-
-.history-page .grid-3 .stat:nth-child(3) {
-  border-top: 3px solid var(--history-coral);
-}
-
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
@@ -1088,18 +1074,6 @@
 /* Body text */
 .settings-page .card p {
   color: var(--settings-text-muted);
-}
-
-/* Secondary button */
-.settings-page .btn-secondary {
-  background: var(--settings-primary);
-  border-color: var(--settings-primary);
-  color: #ffffff;
-}
-
-.settings-page .btn-secondary:hover {
-  background: var(--settings-primary-dark);
-  border-color: var(--settings-primary-dark);
 }
 
 /* Subtle section accents */

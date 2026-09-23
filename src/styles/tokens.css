@@ -30,107 +30,42 @@
 
   --radius-sm: 4px;
   --radius-md: 8px;
+
+  /* Extra signature accents, kept in the same low-saturation
+     earthy family as --gold / --coral / --teal above, so every
+     page shares one surface/text system and differs only by a
+     single accent color used for headings, primary buttons and
+     light wayfinding touches. */
+  --slate: #47616c;
+  --slate-dim: #b7c6cb;
+
+  --plum: #7c5678;
+  --plum-dim: #cbb7c8;
+
+  --clay: #935a2e;
+  --clay-dim: #d8c0a7;
+
+  --stone: #57584c;
+  --stone-dim: #c7c7ba;
 }
 
 
 /* =========================================================
-   DASHBOARD THEME
+   PER-PAGE ACCENT
+   Every page shares the same neutral surface / text / border
+   system defined above. Only --accent (and its dim pair)
+   changes per page, giving each section of the app a single
+   signature color for wayfinding instead of a full palette
+   swap.
    ========================================================= */
 
-.dashboard-page {
-  --dashboard-primary: #5bc3e0;
-  --dashboard-primary-dark: #2e9db9;
-
-  --dashboard-deep: #7e2d00;
-  --dashboard-deep-soft: #a14f29;
-
-  --dashboard-bg: #ffeacf;
-  --dashboard-surface: #fff4e7;
-  --dashboard-surface-2: #f8ddc0;
-
-  --dashboard-border: #d8b99a;
-  --dashboard-border-soft: #ead4bb;
-
-  --dashboard-text: #3b2115;
-  --dashboard-text-muted: #907159;
-
-  --dashboard-success: #2f8f78;
-  --dashboard-warning: #c68128;
-  --dashboard-danger: #a84b32;
-}
-
-
-/* =========================================================
-   TASKS THEME
-   ========================================================= */
-
-.tasks-page {
-  --tasks-primary: #004f39;
-  --tasks-primary-dark: #003b2b;
-
-  --tasks-bg: #fcfcd4;
-  --tasks-surface: #f8f8d9;
-  --tasks-surface-2: #deebe7;
-
-  --tasks-border: #b9cec7;
-  --tasks-border-soft: #d7e4df;
-
-  --tasks-text: #173c31;
-  --tasks-text-muted: #55736a;
-
-  --tasks-danger: #9b4539;
-}
-
-
-/* =========================================================
-   WEEKLY PLANNER THEME
-   ========================================================= */
-
-.planner-page {
-  --planner-primary: #334a52;
-  --planner-primary-dark: #263a40;
-
-  --planner-blue-gray: #96afb8;
-  --planner-lavender: #cfa8de;
-  --planner-purple: #9874a7;
-
-  --planner-bg: #eef2f3;
-  --planner-surface: #f7f9f9;
-  --planner-surface-2: #e2e9eb;
-
-  --planner-border: #b9c8cc;
-  --planner-border-soft: #d5dfe2;
-
-  --planner-text: #26373d;
-  --planner-text-muted: #60757d;
-
-  --planner-danger: #a04f55;
-  --planner-danger-bg: #f1dfe2;
-}
-
-/* =========================================================
-   TODAY THEME
-   ========================================================= */
-
-.today-page {
-  --today-primary: #845ec2;
-  --today-primary-dark: #68459f;
-
-  --today-teal: #00a98f;
-  --today-teal-dark: #008873;
-
-  --today-bg: #fbeaff;
-  --today-surface: #fffaff;
-  --today-surface-2: #f3e4f7;
-
-  --today-border: #d9c6e3;
-  --today-border-soft: #eaddec;
-
-  --today-text: #30233a;
-  --today-text-muted: #75647e;
-
-  --today-danger: #a64b5d;
-}
+.dashboard-page      { --accent: var(--gold);  --accent-dim: var(--gold-dim); }
+.tasks-page          { --accent: var(--teal);  --accent-dim: var(--teal-dim); }
+.planner-page        { --accent: var(--slate); --accent-dim: var(--slate-dim); }
+.today-page          { --accent: var(--coral); --accent-dim: var(--coral-dim); }
+.weekly-report-page  { --accent: var(--plum);  --accent-dim: var(--plum-dim); }
+.history-page        { --accent: var(--clay);  --accent-dim: var(--clay-dim); }
+.settings-page       { --accent: var(--stone); --accent-dim: var(--stone-dim); }
 
 /* =========================================================
    GLOBAL BASE
@@ -250,15 +185,14 @@ button:focus-visible {
 }
 
 .btn-primary {
-  background: #30443f;
+  background: var(--accent, #30443f);
   color: #ffffff;
-  border-color: #30443f;
+  border-color: var(--accent, #30443f);
   font-weight: 600;
 }
 
 .btn-primary:hover {
-  background: #1f302c;
-  border-color: #1f302c;
+  filter: brightness(0.88);
   transform: translateY(-1px);
 }
 
@@ -286,25 +220,6 @@ button:focus-visible {
 
 
 /* =========================================================
-   DASHBOARD-SPECIFIC BUTTONS
-   ========================================================= */
-
-.dashboard-page .btn-primary {
-  background: var(--dashboard-deep);
-  border-color: var(--dashboard-deep);
-  color: #ffffff;
-  box-shadow: 0 2px 0 rgba(126, 45, 0, 0.08);
-}
-
-.dashboard-page .btn-primary:hover {
-  background: #612200;
-  border-color: #612200;
-  color: #ffffff;
-  transform: translateY(-1px);
-}
-
-
-/* =========================================================
    REDUCED MOTION
    ========================================================= */
 
@@ -313,73 +228,4 @@ button:focus-visible {
     animation: none !important;
     transition: none !important;
   }
-}
-
-/* =========================================================
-   WEEKLY REPORT THEME
-   ========================================================= */
-
-.weekly-report-page {
-  --report-primary: #d65db1;
-  --report-primary-dark: #b84491;
-
-  --report-coral: #ff6f91;
-  --report-orange: #ff9671;
-  --report-yellow: #ffc75f;
-  --report-green: #f9f871;
-
-  --report-bg: #fff0f7;
-  --report-surface: #fffaff;
-  --report-surface-2: #f9e3ef;
-
-  --report-border: #e5bfd4;
-  --report-border-soft: #efd7e3;
-
-  --report-text: #39232f;
-  --report-text-muted: #806a77;
-}
-
-/* =========================================================
-   HISTORY THEME
-   ========================================================= */
-
-.history-page {
-  --history-primary: #bb5b3e;
-  --history-primary-dark: #99452f;
-
-  --history-yellow: #f9f871;
-  --history-peach: #ffc6a3;
-  --history-coral: #f88f6f;
-
-  --history-bg: #fff5ec;
-  --history-surface: #fffaf5;
-  --history-surface-2: #ffeadc;
-
-  --history-border: #e5c3b1;
-  --history-border-soft: #efd8ca;
-
-  --history-text: #38241d;
-  --history-text-muted: #806b61;
-}
-
-/* =========================================================
-   SETTINGS THEME
-   ========================================================= */
-
-.settings-page {
-  --settings-primary: #494738;
-  --settings-primary-dark: #36352a;
-
-  --settings-olive: #aeac9a;
-  --settings-teal: #95b1af;
-
-  --settings-bg: #f5f4ef;
-  --settings-surface: #fffefa;
-  --settings-surface-2: #e9e8df;
-
-  --settings-border: #d3d1c4;
-  --settings-border-soft: #e4e2d8;
-
-  --settings-text: #2f2e27;
-  --settings-text-muted: #747267;
-}
+}  
