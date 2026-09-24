@@ -307,24 +307,6 @@ function TaskRow({ task }) {
     }
   }
 
-  async function handleMarkDone() {
-    /*
-     * Tasks with mini-tasks are completed through their
-     * mini-tasks on the Today page.
-     */
-    if (hasMiniTasks) return;
-
-    await updateTask(task.id, {
-      status: 'done',
-    });
-  }
-
-  async function handleReopen() {
-    await updateTask(task.id, {
-      status: 'active',
-    });
-  }
-
   async function handleDelete() {
     const confirmed = window.confirm(
       `Delete "${task.name}"?`
