@@ -639,7 +639,7 @@ export function AppProvider({ children }) {
               taskId,
             ];
 
-      await db.put(
+            await db.put(
         'dailyRecords',
         {
           ...rec,
@@ -647,14 +647,53 @@ export function AppProvider({ children }) {
         }
       );
 
+      /*
+       * A task can be scheduled across more than one day when
+       * it didn't fit in a single sitting (see the scheduler's
+       * auto-split). Each day's session gets its own checkbox,
+       * but the task itself should only flip to "done" once
+       * every session is checked off - otherwise regenerating
+       * the plan would treat a partially-finished task as
+       * complete and drop its remaining sessions.
+       */
+      const week = await db.getOne('weeks', weekId);
+
+      let allSessionsComplete = !has;
+
+      if (week?.schedule) {
+        const scheduledDays = DAYS.filter((d) =>
+          (week.schedule.days[d] || []).some(
+            (entry) => entry.taskId === taskId
+          )
+        );
+
+        if (scheduledDays.length > 1) {
+          const allRecords = await db.getAll('dailyRecords');
+
+          allSessionsComplete = scheduledDays.every((d) => {
+            if (d === day) {
+              // This is the toggle we just applied above.
+              return !has;
+            }
+
+            const otherRec = allRecords.find(
+              (r) => r.id === `${weekId}_${d}`
+            );
+
+            return (
+              otherRec?.completedTaskIds || []
+            ).includes(taskId);
+          });
+        }
+      }
+
       await db.put(
         'tasks',
         {
           ...task,
-          status:
-            has
-              ? 'active'
-              : 'done',
+          status: allSessionsComplete
+            ? 'done'
+            : 'active',
         }
       );
 
@@ -805,7 +844,7 @@ export function AppProvider({ children }) {
         const incompleteTaskIds =
           [];
 
-        scheduledTaskIds.forEach(
+                scheduledTaskIds.forEach(
           (taskId) => {
             const task =
               tasksById[taskId];
@@ -814,37 +853,51 @@ export function AppProvider({ children }) {
               return;
             }
 
-            const items =
-              task.miniTasks?.length ||
-              1;
+            let items;
+            let done;
 
-            const done =
-              task.miniTasks?.length
-                ? task.miniTasks.filter(
-                    (mt) =>
-                      weekRecords.some(
-                        (r) =>
-                          (
-                            r.completedMiniTaskIds ||
-                            []
-                          ).includes(
-                            mt.id
-                          )
-                      )
-                  ).length
-                : weekRecords.some(
+            if (task.miniTasks?.length) {
+              items = task.miniTasks.length;
+
+              done = task.miniTasks.filter(
+                (mt) =>
+                  weekRecords.some(
                     (r) =>
                       (
-                        r.completedTaskIds ||
+                        r.completedMiniTaskIds ||
                         []
-                      ).includes(
-                        taskId
-                      )
+                      ).includes(mt.id)
                   )
-                  ? 1
-                  : 0;
+              ).length;
+            } else {
+              /*
+               * A plain task may be scheduled across more than
+               * one day (auto-split, when it didn't fit in one
+               * sitting). Each day's session is its own
+               * actionable item, so this task only counts as
+               * complete once every one of those days has been
+               * checked off - matching dayCompletion() above.
+               */
+              const scheduledDays = DAYS.filter((d) =>
+                (week.schedule.days[d] || []).some(
+                  (e) => e.taskId === taskId
+                )
+              );
 
-            if (done >= items) {
+              items = scheduledDays.length;
+
+              done = scheduledDays.filter((d) => {
+                const rec = weekRecords.find(
+                  (r) => r.day === d
+                );
+
+                return (
+                  rec?.completedTaskIds || []
+                ).includes(taskId);
+              }).length;
+            }
+
+            if (items > 0 && done >= items) {
               completedTaskIds.add(
                 taskId
               );
@@ -855,7 +908,6 @@ export function AppProvider({ children }) {
             }
           }
         );
-
         const consistencyDays =
           dayStats.filter(
             (d) =>

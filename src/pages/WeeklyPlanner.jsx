@@ -5,11 +5,58 @@ import { DAYS, DAY_LABELS, formatMinutes, formatShort, isoDate, mondayOf } from 
 function CreateWeekForm() {
   const { createWeek } = useApp();
   const [startDate, setStartDate] = useState(isoDate(mondayOf()));
+  const [dayMode, setDayMode] = useState('whole'); // 'whole' | 'custom'
   const [capacities, setCapacities] = useState({ mon: 4, tue: 4, wed: 4, thu: 4, fri: 4, sat: 7, sun: 7 });
+
+  // When switching into "customize" mode, default to whichever
+  // days from today onward still fall inside this week - so
+  // starting the planner mid-week (say, on a Wednesday) doesn't
+  // require manually zeroing out Monday and Tuesday.
+  const [availableDays, setAvailableDays] = useState(() => {
+    const start = new Date(`${isoDate(mondayOf())}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((today - start) / 86400000);
+
+    if (diffDays < 0 || diffDays > 6) {
+      return [...DAYS];
+    }
+
+    return DAYS.slice(diffDays);
+  });
+
+  function toggleDayMode(mode) {
+    setDayMode(mode);
+  }
+
+  function toggleAvailableDay(day) {
+    setAvailableDays((current) =>
+      current.includes(day)
+        ? current.filter((d) => d !== day)
+        : [...current, day]
+    );
+  }
 
   const submit = async (e) => {
     e.preventDefault();
-    await createWeek({ startDate, capacities, fixedCommitments: [] });
+
+    const finalCapacities =
+      dayMode === 'custom'
+        ? Object.fromEntries(
+            DAYS.map((d) => [
+              d,
+              availableDays.includes(d)
+                ? capacities[d]
+                : 0,
+            ])
+          )
+        : capacities;
+
+    await createWeek({
+      startDate,
+      capacities: finalCapacities,
+      fixedCommitments: [],
+    });
   };
 
   return (
@@ -19,22 +66,80 @@ function CreateWeekForm() {
         <label>Week starts (Monday)</label>
         <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
       </div>
+
+      <div className="field">
+        <label>Which days are you planning for?</label>
+        <div className="row" style={{ gap: 8 }}>
+          <button
+            type="button"
+            className={`btn ${dayMode === 'whole' ? 'btn-primary' : ''}`}
+            onClick={() => toggleDayMode('whole')}
+          >
+            Whole week
+          </button>
+          <button
+            type="button"
+            className={`btn ${dayMode === 'custom' ? 'btn-primary' : ''}`}
+            onClick={() => toggleDayMode('custom')}
+          >
+            Customize days
+          </button>
+        </div>
+        {dayMode === 'custom' && (
+          <p style={{ marginTop: 6 }}>
+            Useful if you're setting this up partway through the
+            week - just uncheck the days that have already passed
+            or that you don't have available.
+          </p>
+        )}
+      </div>
+
+      {dayMode === 'custom' && (
+        <div className="field">
+          <label>Available days</label>
+          <div className="row" style={{ flexWrap: 'wrap', gap: 12 }}>
+            {DAYS.map((d) => (
+              <label
+                key={d}
+                className="row"
+                style={{ gap: 6, cursor: 'pointer' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={availableDays.includes(d)}
+                  onChange={() => toggleAvailableDay(d)}
+                />
+                <span>{DAY_LABELS[d]}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="field">
         <label>Available hours per day</label>
         <div className="row" style={{ flexWrap: 'wrap', gap: 12 }}>
-          {DAYS.map((d) => (
-            <div key={d} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{DAY_LABELS[d]}</span>
-              <input
-                type="number" min="0" max="24" step="0.5"
-                value={capacities[d]}
-                onChange={(e) => setCapacities((c) => ({ ...c, [d]: Number(e.target.value) }))}
-                style={{ width: 70 }}
-              />
-            </div>
-          ))}
+          {DAYS.map((d) => {
+            const isAvailable =
+              dayMode === 'whole' ||
+              availableDays.includes(d);
+
+            return (
+              <div key={d} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{DAY_LABELS[d]}</span>
+                <input
+                  type="number" min="0" max="24" step="0.5"
+                  value={isAvailable ? capacities[d] : 0}
+                  disabled={!isAvailable}
+                  onChange={(e) => setCapacities((c) => ({ ...c, [d]: Number(e.target.value) }))}
+                  style={{ width: 70, opacity: isAvailable ? 1 : 0.5 }}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
+
       <button type="submit" className="btn btn-primary">Create week</button>
     </form>
   );
@@ -312,7 +417,7 @@ function ScheduleView({ week, tasksById }) {
                         </span>
                       </div>
 
-                      {entry.miniTaskIds &&
+                                            {entry.miniTaskIds &&
                         entry.miniTaskIds.length > 0 && (
                           <div
                             style={{
@@ -332,6 +437,20 @@ function ScheduleView({ week, tasksById }) {
                               .join(', ')}
                           </div>
                         )}
+
+                      {entry.autoSplit && (
+                        <div
+                          style={{
+                            paddingLeft: 18,
+                            color: 'var(--text-muted)',
+                            fontSize: '0.85rem',
+                          }}
+                        >
+                          Didn't fit in one sitting — session{' '}
+                          {entry.autoSplit.part} of{' '}
+                          {entry.autoSplit.total}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -347,6 +466,13 @@ function ScheduleView({ week, tasksById }) {
 export default function WeeklyPlanner() {
   const { activeWeek, tasks, tasksById, regenerateSchedule, updateWeek } = useApp();
   const [editingCapacity, setEditingCapacity] = useState(false);
+
+  // Remembers the last non-zero hours typed for each day, so
+  // unchecking "available" and rechecking it later restores a
+  // sensible number instead of always resetting to a default.
+  const [rememberedHours, setRememberedHours] = useState(
+    () => activeWeek?.capacities || {}
+  );
 
   if (!activeWeek) {
     return (
@@ -371,29 +497,80 @@ export default function WeeklyPlanner() {
         </button>
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
+                <div className="card" style={{ marginBottom: 20 }}>
         <div className="row-between">
           <h3>Daily capacity</h3>
           <button className="btn btn-ghost" onClick={() => setEditingCapacity((v) => !v)}>
             {editingCapacity ? 'Done' : 'Edit'}
           </button>
         </div>
+        {!editingCapacity && (
+          <p style={{ marginTop: -6, color: 'var(--text-muted)' }}>
+            Setting this up partway through the week? Click Edit
+            to mark which days are still available.
+          </p>
+        )}
+        {editingCapacity && (
+          <p style={{ marginTop: -6 }}>
+            Uncheck a day to mark it unavailable this week -
+            handy for days that have already passed, or days you
+            know you won't have time.
+          </p>
+        )}
         <div className="row" style={{ flexWrap: 'wrap', gap: 16, marginTop: 8 }}>
-          {DAYS.map((d) => (
-            <div key={d} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{DAY_LABELS[d]}</span>
-              {editingCapacity ? (
-                <input
-                  type="number" min="0" max="24" step="0.5"
-                  value={activeWeek.capacities[d]}
-                  onChange={(e) => updateWeek(activeWeek.id, { capacities: { ...activeWeek.capacities, [d]: Number(e.target.value) } })}
-                  style={{ width: 70 }}
-                />
-              ) : (
-                <span className="mono">{activeWeek.capacities[d]}h</span>
-              )}
-            </div>
-          ))}
+          {DAYS.map((d) => {
+            const hours = activeWeek.capacities[d];
+            const isAvailable = Number(hours) > 0;
+
+            return (
+              <div key={d} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{DAY_LABELS[d]}</span>
+                {editingCapacity ? (
+                  <>
+                    <label
+                      className="row"
+                      style={{ gap: 4, cursor: 'pointer', marginBottom: 2 }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isAvailable}
+                        onChange={(e) => {
+                          const nextHours = e.target.checked
+                            ? (rememberedHours[d] || 4)
+                            : 0;
+
+                          updateWeek(activeWeek.id, {
+                            capacities: {
+                              ...activeWeek.capacities,
+                              [d]: nextHours,
+                            },
+                          });
+                        }}
+                      />
+                      <span style={{ fontSize: '0.72rem' }}>Available</span>
+                    </label>
+                    <input
+                      type="number" min="0" max="24" step="0.5"
+                      value={hours}
+                      disabled={!isAvailable}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+
+                        if (value > 0) {
+                          setRememberedHours((r) => ({ ...r, [d]: value }));
+                        }
+
+                        updateWeek(activeWeek.id, { capacities: { ...activeWeek.capacities, [d]: value } });
+                      }}
+                      style={{ width: 70, opacity: isAvailable ? 1 : 0.5 }}
+                    />
+                  </>
+                ) : (
+                  <span className="mono">{hours}h</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -289,7 +289,7 @@ export default function Today() {
 
         if (!task) return null;
 
-        const relevantMiniTasks =
+                const relevantMiniTasks =
           entry.miniTaskIds
             ? task.miniTasks.filter(
                 (mt) =>
@@ -297,9 +297,11 @@ export default function Today() {
                     mt.id
                   )
               )
+            : entry.autoSplit
+            ? []
             : task.miniTasks;
 
-        return (
+                      return (
           <div
             className="card"
             key={i}
@@ -312,6 +314,15 @@ export default function Today() {
                 }}
               >
                 {task.name}
+                {entry.autoSplit && (
+                  <span
+                    className="badge"
+                    style={{ marginLeft: 8 }}
+                  >
+                    Session {entry.autoSplit.part} of{' '}
+                    {entry.autoSplit.total}
+                  </span>
+                )}
               </h3>
 
               <span
@@ -325,6 +336,19 @@ export default function Today() {
                 )}
               </span>
             </div>
+
+            {entry.autoSplit && (
+              <p
+                style={{
+                  color: 'var(--text-muted)',
+                  marginTop: 4,
+                }}
+              >
+                This task didn't fit in one sitting, so it's
+                split across {entry.autoSplit.total} days.
+                Mark each session complete as you finish it.
+              </p>
+            )}
 
             {relevantMiniTasks &&
             relevantMiniTasks.length > 0 ? (
@@ -376,7 +400,7 @@ export default function Today() {
                   }
                 )}
               </div>
-            ) : (
+              ) : (
               <label
                 className="row"
                 style={{

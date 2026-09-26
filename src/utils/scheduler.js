@@ -1,5 +1,10 @@
 import { DAYS } from './dates';
 
+// Below this, a leftover sliver of capacity on a day is treated
+// as unusable for an auto-split chunk rather than being handed
+// a token amount of the task.
+const AUTO_SPLIT_MIN_MINUTES = 15;
+
 function miniTaskMinutes(task) {
   if (!task.miniTasks || task.miniTasks.length === 0) {
     return [];
@@ -273,6 +278,76 @@ export function generateSchedule(week, tasks) {
       }
 
       continue;
+    }
+
+        // Either this task has no mini-tasks to split on, or only
+    // one (which gives no useful boundary). Rather than dropping
+    // the whole task when it can't fit in a single sitting,
+    // automatically split it across whatever days between now
+    // and its deadline still have room, one session per day.
+    {
+      let remainingTaskMinutes = totalMinutes;
+      const chunks = [];
+
+      for (
+        let i = earliestDay;
+        i <= latestDay && remainingTaskMinutes > 0;
+        i++
+      ) {
+        const day = DAYS[i];
+        const available = remaining[day];
+
+        if (available < AUTO_SPLIT_MIN_MINUTES) continue;
+
+        const chunkMinutes = Math.min(
+          available,
+          remainingTaskMinutes
+        );
+
+        chunks.push({ dayIndex: i, minutes: chunkMinutes });
+        remaining[day] -= chunkMinutes;
+        remainingTaskMinutes -= chunkMinutes;
+      }
+
+            if (chunks.length > 0) {
+        chunks.forEach((chunk, idx) => {
+          const day = DAYS[chunk.dayIndex];
+
+          days[day].push({
+            taskId: task.id,
+            minutes: chunk.minutes,
+            // Same as the whole-block case above: if this task
+            // has any mini-tasks, each session stays completable
+            // through them (toggleMiniTask), consistent with how
+            // the task would behave if it had fit in one sitting.
+            // Only a task with zero mini-tasks falls back to the
+            // plain per-day completion checkbox.
+            miniTaskIds:
+              miniTasks.length > 0
+                ? miniTasks.map((mt) => mt.id)
+                : undefined,
+            // Informational only - lets the UI show "Session 1
+            // of 2" etc. so it's clear why the task appears on
+            // more than one day.
+            autoSplit: {
+              part: idx + 1,
+              total: chunks.length,
+              final: idx === chunks.length - 1,
+            },
+          });
+        });
+
+        taskDay.set(task.id, chunks[0].dayIndex);
+
+        if (remainingTaskMinutes > 0) {
+          unscheduled.push({
+            taskId: task.id,
+            reason: 'insufficient-capacity-partial',
+          });
+        }
+
+        continue;
+      }
     }
 
     unscheduled.push({

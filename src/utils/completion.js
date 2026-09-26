@@ -53,9 +53,11 @@ export function dayCompletion(scheduledEntries, tasksById, record) {
       completedItems += done;
 
       completedMinutes +=
-        items > 0 ? (done / items) * entry.minutes : 0;
+      items > 0 ? (done / items) * entry.minutes : 0;
     } else {
-      // A normal task is one actionable item.
+      // A normal task is one actionable item - including each
+      // individual session of a task that got auto-split across
+      // days, since each session is its own thing to finish.
       const doneTasks = record?.completedTaskIds || [];
       const done = doneTasks.includes(task.id) ? 1 : 0;
 

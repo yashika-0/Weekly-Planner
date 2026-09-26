@@ -2,24 +2,37 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { formatMinutes } from '../utils/dates';
 
-function TaskForm({ onClose }) {
+function TaskForm({ onClose, task }) {
   const {
     activeWeek,
     folders,
     tasks,
     addTask,
+    updateTask,
     addFolder,
   } = useApp();
 
-  const [name, setName] = useState('');
-  const [hours, setHours] = useState('');
-  const [minutes, setMinutes] = useState('');
-  const [deadline, setDeadline] = useState('');
-  const [folderId, setFolderId] = useState('');
+  const isEditing = Boolean(task);
+
+  const [name, setName] = useState(task?.name || '');
+  const [hours, setHours] = useState(
+    task ? String(Math.floor(task.estimatedMinutes / 60)) : ''
+  );
+  const [minutes, setMinutes] = useState(
+    task ? String(task.estimatedMinutes % 60) : ''
+  );
+  const [deadline, setDeadline] = useState(task?.deadline || '');
+  const [folderId, setFolderId] = useState(task?.folderId || '');
   const [newFolder, setNewFolder] = useState('');
-  const [dependsOn, setDependsOn] = useState('');
-  const [miniTasksText, setMiniTasksText] = useState('');
-  const [addToWeek, setAddToWeek] = useState(Boolean(activeWeek));
+  const [dependsOn, setDependsOn] = useState(task?.dependsOn || '');
+  const [miniTasksText, setMiniTasksText] = useState(
+    (task?.miniTasks || []).map((mt) => mt.name).join('\n')
+  );
+  const [addToWeek, setAddToWeek] = useState(
+    task
+      ? Boolean(activeWeek) && task.weekId === activeWeek?.id
+      : Boolean(activeWeek)
+  );
   const [error, setError] = useState('');
 
   async function handleSubmit(e) {
@@ -47,25 +60,58 @@ function TaskForm({ onClose }) {
       finalFolderId = folder.id;
     }
 
+    /*
+     * When editing, keep the same id (and therefore completion
+     * history) for any mini-task whose name is unchanged. Only
+     * genuinely new lines get a new id.
+     */
+    const existingByName = new Map(
+      (task?.miniTasks || []).map((mt) => [mt.name, mt])
+    );
+
     const miniTasks = miniTasksText
       .split('\n')
       .map((line) => line.trim())
       .filter(Boolean)
-      .map((miniTaskName) => ({
-        id: crypto.randomUUID(),
-        name: miniTaskName,
-        estimatedMinutes: 0,
-      }));
+      .map((miniTaskName) => {
+        const existing = existingByName.get(miniTaskName);
 
-    await addTask({
-      name: name.trim(),
-      estimatedMinutes,
-      deadline: deadline || null,
-      folderId: finalFolderId,
-      dependsOn: dependsOn || null,
-      miniTasks,
-      weekId: addToWeek && activeWeek ? activeWeek.id : null,
-    });
+        if (existing) {
+          existingByName.delete(miniTaskName);
+          return existing;
+        }
+
+        return {
+          id: crypto.randomUUID(),
+          name: miniTaskName,
+          estimatedMinutes: 0,
+        };
+      });
+
+    if (isEditing) {
+      await updateTask(task.id, {
+        name: name.trim(),
+        estimatedMinutes,
+        deadline: deadline || null,
+        folderId: finalFolderId,
+        dependsOn: dependsOn || null,
+        miniTasks,
+        weekId:
+          addToWeek && activeWeek
+            ? activeWeek.id
+            : null,
+      });
+    } else {
+      await addTask({
+        name: name.trim(),
+        estimatedMinutes,
+        deadline: deadline || null,
+        folderId: finalFolderId,
+        dependsOn: dependsOn || null,
+        miniTasks,
+        weekId: addToWeek && activeWeek ? activeWeek.id : null,
+      });
+    }
 
     onClose();
   }
@@ -73,7 +119,7 @@ function TaskForm({ onClose }) {
   return (
     <div className="card" style={{ marginBottom: 20 }}>
       <div className="row-between">
-        <h2>New task</h2>
+        <h2>{isEditing ? 'Edit task' : 'New task'}</h2>
 
         <button
           className="btn btn-ghost"
@@ -168,13 +214,13 @@ function TaskForm({ onClose }) {
             <option value="">No dependency</option>
 
             {tasks
-              .filter((task) => task.id !== undefined)
-              .map((task) => (
+              .filter((t) => t.id !== undefined && t.id !== task?.id)
+              .map((t) => (
                 <option
-                  key={task.id}
-                  value={task.id}
+                  key={t.id}
+                  value={t.id}
                 >
-                  {task.name}
+                  {t.name}
                 </option>
               ))}
           </select>
@@ -194,6 +240,8 @@ function TaskForm({ onClose }) {
 
           <small style={{ color: 'var(--text-muted)' }}>
             Each line becomes an actionable mini-task.
+            {isEditing &&
+              ' Renaming or removing a line resets that mini-task\u2019s completion status.'}
           </small>
         </div>
 
@@ -227,7 +275,7 @@ function TaskForm({ onClose }) {
           className="btn btn-primary"
           type="submit"
         >
-          Create task
+          {isEditing ? 'Save changes' : 'Create task'}
         </button>
       </form>
     </div>
@@ -421,12 +469,11 @@ function TaskRow({ task }) {
             Add to this week
           </button>
         )}
-
-        <button
+                <button
           className="btn btn-ghost"
           onClick={() => setEditing(!editing)}
         >
-          {editing ? 'Close' : 'Details'}
+          {editing ? 'Cancel' : 'Edit'}
         </button>
 
         <button
@@ -445,32 +492,16 @@ function TaskRow({ task }) {
             borderTop: '1px solid var(--border)',
           }}
         >
-          <p>
-            <strong>Estimated:</strong>{' '}
-            {formatMinutes(task.estimatedMinutes)}
-          </p>
-
-          <p>
-            <strong>Deadline:</strong>{' '}
-            {task.deadline || 'None'}
-          </p>
-
-          <p>
-            <strong>Mini-tasks:</strong>{' '}
-            {hasMiniTasks
-              ? task.miniTasks.map((mt) => mt.name).join(', ')
-              : 'None'}
-          </p>
-
-          <p>
-            <strong>Status:</strong>{' '}
-            {task.status}
-          </p>
+          <TaskForm
+            task={task}
+            onClose={() => setEditing(false)}
+          />
         </div>
       )}
     </div>
   );
 }
+          
 
 export default function Tasks() {
   const { tasks, folders } = useApp();
