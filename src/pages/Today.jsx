@@ -448,11 +448,23 @@ export default function Today() {
                 marginTop: 14,
                 fontStyle: 'italic',
                 color:
-                  message.tier === 'low'
-                    ? 'var(--coral)'
-                    : message.tier === 'mid'
-                    ? 'var(--gold)'
-                    : 'var(--teal)',
+                message.tier === 'high'
+                  ? '#6fbf73'
+                  : message.tier === 'good'
+                  ? '#8fbd63'
+                  : message.tier === 'sarcastic'
+                  ? '#b5b85a'
+                  : message.tier === 'sarcastic_low'
+                  ? '#d0b84f'
+                  : message.tier === 'harsh'
+                  ? '#d6a04d'
+                  : message.tier === 'very_toxic'
+                  ? '#d8874c'
+                  : message.tier === 'brutal'
+                  ? '#d66f55'
+                  : message.tier === 'brutal_sarcasm'
+                  ? '#d45d5d'
+                  : '#d34f4f',
               }}
             >
               "{message.text}"

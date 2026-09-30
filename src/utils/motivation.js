@@ -191,8 +191,14 @@ const STORAGE_KEY = 'usedMotivationIds';
 
 function tierFor(pct) {
   if (pct >= 90) return 'high';
-  if (pct >= 80) return 'mid';
-  return 'low';
+  if (pct >= 80) return 'good';
+  if (pct >= 70) return 'sarcastic';
+  if (pct >= 60) return 'sarcastic_low';
+  if (pct >= 50) return 'harsh';
+  if (pct >= 40) return 'very_toxic';
+  if (pct >= 30) return 'brutal';
+  if (pct >= 20) return 'brutal_sarcasm';
+  return 'nuclear';
 }
 
 // Avoids repeating a message until the tier's pool is exhausted, then resets.
