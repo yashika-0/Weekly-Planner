@@ -132,6 +132,7 @@ function CreateWeekForm() {
                   value={isAvailable ? capacities[d] : 0}
                   disabled={!isAvailable}
                   onChange={(e) => setCapacities((c) => ({ ...c, [d]: Number(e.target.value) }))}
+                  onWheel={(e) => e.target.blur()}
                   style={{ width: 70, opacity: isAvailable ? 1 : 0.5 }}
                 />
               </div>
@@ -182,7 +183,7 @@ function CommitmentsEditor({ week }) {
         <select value={day} onChange={(e) => setDay(e.target.value)}>
           {DAYS.map((d) => <option key={d} value={d}>{DAY_LABELS[d]}</option>)}
         </select>
-        <input type="number" min="0" step="0.5" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="hours" style={{ width: 80 }} />
+        <input type="number" min="0" step="0.5" value={hours} onChange={(e) => setHours(e.target.value)} onWheel={(e) => e.target.blur()} placeholder="hours" style={{ width: 80 }} />
         <button type="submit" className="btn">Add</button>
       </form>
     </div>
@@ -549,10 +550,11 @@ export default function WeeklyPlanner() {
                       />
                       <span style={{ fontSize: '0.72rem' }}>Available</span>
                     </label>
-                    <input
+                     <input
                       type="number" min="0" max="24" step="0.5"
                       value={hours}
                       disabled={!isAvailable}
+                      onWheel={(e) => e.target.blur()}
                       onChange={(e) => {
                         const value = Number(e.target.value);
 

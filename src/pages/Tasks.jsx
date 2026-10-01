@@ -148,17 +148,19 @@ function TaskForm({ onClose, task }) {
               min="0"
               value={hours}
               onChange={(e) => setHours(e.target.value)}
+              onWheel={(e) => e.target.blur()}
             />
           </div>
 
           <div className="field">
             <label>Minutes</label>
-            <input
+              <input
               type="number"
               min="0"
               max="59"
               value={minutes}
               onChange={(e) => setMinutes(e.target.value)}
+              onWheel={(e) => e.target.blur()}
             />
           </div>
         </div>

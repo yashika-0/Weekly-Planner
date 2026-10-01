@@ -6,7 +6,7 @@ import {
   DAYS,
   DAY_LABELS,
   formatMinutes,
-  todayDayKey,
+  currentDayKey,
 } from '../utils/dates';
 
 import {
@@ -24,9 +24,7 @@ export default function Today() {
     getMotivation,
   } = useApp();
 
-  const defaultDay = activeWeek
-    ? (todayDayKey(activeWeek.startDate) || 'mon')
-    : 'mon';
+    const defaultDay = currentDayKey();
 
   const [day, setDay] = useState(defaultDay);
   const [message, setMessage] = useState(null);

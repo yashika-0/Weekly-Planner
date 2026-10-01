@@ -61,3 +61,13 @@ export function todayDayKey(weekStartIso) {
   if (diff < 0 || diff > 6) return null;
   return DAYS[diff];
 }
+
+// Today's actual weekday (mon..sun), independent of any week's
+// startDate. Used to default the Today page's day selector to
+// whatever day it really is, even if the active week's stored
+// dates no longer line up with the real calendar (e.g. it was
+// set up in an earlier session).
+export function currentDayKey() {
+  const jsDay = new Date().getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  return DAYS[(jsDay + 6) % 7];
+}
